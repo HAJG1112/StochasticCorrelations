@@ -2,7 +2,7 @@ import mgarch
 import numpy as np
 from collections import deque
 
-class DCC:
+class DCC(mgarch):
     def get_cond_corr(self, df, n_days, dist = 'norm'):  #rolling conditional covariance matrix
         '''
         MGARCH model used to fit data to extract the conditional covariance matrix
@@ -14,7 +14,7 @@ class DCC:
         _corr = df.corr()
         m_len = df.shape[1]
         _sigma = deque(maxlen = m_len)  #empty sigma list to append values to
-        _vol = mgarch.mgarch(dist)
+        _vol = m.garch.mgarch(dist)
         _vol.fit(df)
         _x = _vol.predict(n_days)
         _cvm = np.array(_x.get('cov'))
