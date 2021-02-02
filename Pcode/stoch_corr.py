@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-# Modelling Stochastic Correlation: Long Tend, Matthias Ehrhardt and Michael Gunther (2016)
+# Modelling Stochastic Correlation: Long Teng, Matthias Ehrhardt and Michael Gunther (2016)
 
 class ModifiedOU():
     
@@ -20,7 +20,7 @@ class ModifiedOU():
         pass
 
     def _M(self):
-        # takes params a nd b and using the gamma function and hypergeometric function for calculation
+        # takes params a and b and using the gamma function and hypergeometric function for calculation
         pass
 
     def _f(self):
