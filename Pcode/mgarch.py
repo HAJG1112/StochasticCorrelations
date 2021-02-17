@@ -1,16 +1,17 @@
 from scipy.optimize import minimize
 import numpy as np
 from scipy.special import gamma
+from numba import jit
 
 
 class mgarch:
-    
     def __init__(self, dist = 'norm'):
         if dist == 'norm' or dist == 't':
             self.dist = dist
         else: 
             print("Takes pdf name as param: 'norm' or 't'.")
-            
+
+        
     def garch_fit(self, returns):
         res = minimize( self.garch_loglike, (0.01, 0.01, 0.94), args = returns,
               bounds = ((1e-6, 1), (1e-6, 1), (1e-6, 1)))
@@ -21,6 +22,7 @@ class mgarch:
         var_t = self.garch_var(params, returns)
         LogL = np.sum(-np.log(2*np.pi*var_t)) - np.sum( (returns.A1**2)/(2*var_t))
         return -LogL
+
 
     def garch_var(self, params, returns):
         T = len(returns)
@@ -34,7 +36,8 @@ class mgarch:
             else: 
                 var_t[i] = omega + alpha*(returns[i-1]**2) + beta*var_t[i-1]
         return var_t        
-        
+
+    '''
     def mgarch_loglike(self, params, D_t):
         # No of assets
         a = params[0]
@@ -49,6 +52,7 @@ class mgarch:
 
         loglike = 0
         for i in range(1,self.T):
+
             dts = np.diag(D_t[i])
             dtinv = np.linalg.inv(dts)
             et = dtinv*self.rt[i].T
@@ -56,19 +60,46 @@ class mgarch:
             qts = np.linalg.inv(np.sqrt(np.diag(np.diag(Q_t[i]))))
 
             R_t[i] = np.matmul(qts, np.matmul(Q_t[i], qts))
-
-
             H_t[i] = np.matmul(dts, np.matmul(R_t[i], dts))   
-
-            loglike = loglike + self.N*np.log(2*np.pi) + \
+            loglike = loglike - self.N*np.log(2*np.pi) + \
                       2*np.log(D_t[i].sum()) + \
                       np.log(np.linalg.det(R_t[i])) + \
                       np.matmul(self.rt[i], (np.matmul( np.linalg.inv(H_t[i]), self.rt[i].T)))
-
-
+        
+        
         return loglike
+    '''
+    def mgarch_loglike(self, params, D_t):
+        # No of assets
+        a = params[0]
+        b = params[1]
+        Q_bar = np.cov(self.rt.reshape(self.N, self.T))
 
-    
+        Q_t = np.zeros((self.T,self.N,self.N))
+        R_t = np.zeros((self.T,self.N,self.N))
+        H_t = np.zeros((self.T,self.N,self.N))
+        
+        Q_t[0] = np.matmul(self.rt[0].T/2, self.rt[0]/2)
+
+        loglike = 0
+        for i in range(1,self.T):
+
+            dts = np.diag(D_t[i])
+            dtinv = np.linalg.inv(dts)
+            et = dtinv*self.rt[i].T
+            Q_t[i] = (1-a-b)*Q_bar + a*(et*et.T) + b*Q_t[i-1]
+            qts = np.linalg.inv(np.sqrt(np.diag(np.diag(Q_t[i]))))
+
+            R_t[i] = np.matmul(qts, np.matmul(Q_t[i], qts))
+            H_t[i] = np.matmul(dts, np.matmul(R_t[i], dts))   
+            loglike = loglike - (self.N*np.log(2*np.pi) + \
+                      #2*np.log(D_t[i].sum()) + \
+                      2*np.log(np.linalg.det(dts)) + \
+                      np.log(np.linalg.det(R_t[i])) + \
+                      np.matmul(et.T, np.matmul( np.linalg.inv(R_t[i]), et)))*0.5
+        
+        return -loglike
+
     def mgarch_logliket(self, params, D_t):
         # No of assets
         a = params[0]
@@ -100,7 +131,6 @@ class mgarch:
 
         return -loglike
     
-    
     def predict(self, ndays = 1):
         if 'a' in dir(self):
             Q_bar = np.cov(self.rt.reshape(self.N, self.T))
@@ -118,10 +148,7 @@ class mgarch:
                 et = dtinv*self.rt[i].T
                 Q_t[i] = (1-self.a-self.b)*Q_bar + self.a*(et*et.T) + self.b*Q_t[i-1]
                 qts = np.linalg.inv(np.sqrt(np.diag(np.diag(Q_t[i]))))
-
                 R_t[i] = np.matmul(qts, np.matmul(Q_t[i], qts))
-
-
                 H_t[i] = np.matmul(dts, np.matmul(R_t[i], dts))  
 
             if self.dist == 'norm':
@@ -132,10 +159,10 @@ class mgarch:
         else:
             print('Model not fit')
             
-            
+      
     def fit(self, returns):
         self.rt = np.matrix(returns)
-        
+
         self.T = self.rt.shape[0]
         self.N = self.rt.shape[1]
         
@@ -149,6 +176,7 @@ class mgarch:
             params = self.garch_fit(self.rt[:,i])
             D_t[:,i] = np.sqrt(self.garch_var(params, self.rt[:,i]))
         self.D_t = D_t
+        
         if self.dist == 'norm':
             res = minimize(self.mgarch_loglike, (0.01, 0.94), args = D_t,
             bounds = ((1e-6, 1), (1e-6, 1)), 
