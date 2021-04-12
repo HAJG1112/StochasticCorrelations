@@ -24,9 +24,9 @@ def __compute_log_likelihood(params, *args):
     term_3 = 0
 
     for i in range(n):
-        term_1 += mp.log( mp.sqrt(  k /  (pi*sigma**2*(1-mp.exp(-2*k*dt)) ) ) )
-        term_2 += mp.log( 1 / (1- X[i]**2) )
-        term_3 += -k*(np.arctanh(X[i]) - np.arctanh(X[i - 1])*mp.exp(-k*dt) - mu*(1-mp.exp(-k*dt)))**2 / sigma**2*(1-mp.exp(-2*k*dt))
+        term_1 += np.log( np.sqrt(  k /  (pi*sigma**2*(1-np.exp(-2*k*dt)) ) ) )
+        term_2 += np.log( 1 / (1- X[i]**2) )
+        term_3 += -k*(np.arctanh(X[i]) - np.arctanh(X[i - 1])*np.exp(-k*dt) - mu*(1-np.exp(-k*dt)))**2 / sigma**2*(1-np.exp(-2*k*dt))
     
     log_likelihood = term_1 + term_2 + term_3
 
