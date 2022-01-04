@@ -30,7 +30,7 @@ class ModifiedOU:
         linspace = np.linspace(.01, 1, 100)
         res = vectorized(linspace)
         index = res[3].argmax()
-        return res[0][index], res[1][index], res[2][index], res[3][index]
+        return res[0][index], res[1][index], res[2][index]
 
     def compute_correlation_values(self, dataset, rolling_window):
         '''
